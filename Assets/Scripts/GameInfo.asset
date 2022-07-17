@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b86f17aa407ae9f49819859a199e35f3, type: 3}
+  m_Name: GameInfo
+  m_EditorClassIdentifier: 
+  PlayerNedeetForMatch: 5
+  TimeStartingMatch: 5
+  TimerVoting: 60
+  timerAttack: 10
+  animations:
+  - {fileID: 9100000, guid: d177f928f5140ba4c9d022b68bd2b8ec, type: 2}
+  - {fileID: 9100000, guid: 6c66ca04a69fff941906f1b331d57f8b, type: 2}
+  - {fileID: 9100000, guid: df2596c005f9f9b4b8bbecca7fa78ba6, type: 2}
+  - {fileID: 9100000, guid: 54e8aebe712f7e84087252654524b5ae, type: 2}
+  - {fileID: 9100000, guid: 8f9b1a42eb50ef04b8a75e2b95d974bb, type: 2}
