@@ -66,6 +66,7 @@ TextureImporter:
   streamingMipmaps: 0
   streamingMipmapsPriority: 0
   vTOnly: 0
+  ignoreMasterTextureLimit: 0
   grayScaleToAlpha: 0
   generateCubemap: 6
   cubemapConvolution: 0
@@ -472,6 +473,21 @@ TextureImporter:
     edges: []
     weights: []
     secondaryTextures: []
+    nameFileIdTable:
+      MiniGame2_2: 4212460338778620804
+      MiniGame2_11: 1190197434876370478
+      MiniGame2_7: -4545125832916278455
+      MiniGame2_13: -6330402966286670692
+      MiniGame2_6: 7725045077637683139
+      MiniGame2_10: -1916339644782232051
+      MiniGame2_1: -158016907133979010
+      MiniGame2_9: 367620391684665138
+      MiniGame2_4: -4211969379087739439
+      MiniGame2_5: 6247908059233810846
+      MiniGame2_12: 1798058418243269926
+      MiniGame2_8: -3298809141127374670
+      MiniGame2_3: -3100311966818307808
+      MiniGame2_0: -3347448614519808258
   spritePackingTag: 
   pSDRemoveMatte: 0
   pSDShowRemoveMatteOption: 0

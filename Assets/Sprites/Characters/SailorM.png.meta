@@ -69,6 +69,7 @@ TextureImporter:
   streamingMipmaps: 0
   streamingMipmapsPriority: 0
   vTOnly: 0
+  ignoreMasterTextureLimit: 0
   grayScaleToAlpha: 0
   generateCubemap: 6
   cubemapConvolution: 0
@@ -496,6 +497,22 @@ TextureImporter:
     edges: []
     weights: []
     secondaryTextures: []
+    nameFileIdTable:
+      SailorM_9: 7620102459851924034
+      SailorM_2: 3443969303019645428
+      SailorM_11: 5967461479079157201
+      SailorM_14: -1483903118410375187
+      SailorM_12: 1623640581335384512
+      SailorM_5: 50643329686265520
+      SailorM_8: -5086693912555863864
+      SailorM_7: 7291840547061009566
+      SailorM_13: 1367358075677803109
+      SailorM_1: 238657391363624311
+      SailorM_3: 8719995789316224806
+      SailorM_6: 6537511425371854115
+      SailorM_4: -4264788665216855534
+      SailorM_0: 8968950621514770622
+      SailorM_10: -3887622616882351953
   spritePackingTag: 
   pSDRemoveMatte: 0
   pSDShowRemoveMatteOption: 0

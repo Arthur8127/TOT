@@ -14,7 +14,7 @@ public class NetManager : NetworkManager
     {
         instance = this;
         base.Awake();
-
+        
 
     }
 
@@ -25,11 +25,7 @@ public class NetManager : NetworkManager
         Application.runInBackground = true;
         QualitySettings.vSyncCount = 0;
         Application.targetFrameRate = 30;
-#if UNITY_SERVER
-        
-#else
         StartClient();
-#endif
     }
 
     #endregion

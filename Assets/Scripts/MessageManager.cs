@@ -7,6 +7,7 @@ public struct ServerMatchMessage : NetworkMessage
     public ServerMatchOperation serverMatchOperation;
     public Guid matchId;
     public PlayerInfo info;
+    public bool modeIsFree;
 }
 public struct ClientMatchMessage : NetworkMessage
 {
@@ -14,6 +15,7 @@ public struct ClientMatchMessage : NetworkMessage
     public Guid matchId;
     public MatchInfo[] matchInfos;
     public PlayerInfo[] playerInfos;
+    
 }
 [Serializable]
 public struct MatchInfo
@@ -21,12 +23,14 @@ public struct MatchInfo
     public Guid matchId;
     public byte players;
     public byte maxPlayers;
+    public bool isFree;
 }
 [Serializable]
 public struct PlayerInfo
 {
     public int playerIndex;
-   // public bool ready;
+    public string email;
+    public float balance;
     public Guid matchId;
    
 }
@@ -37,6 +41,7 @@ public struct MatchPlayerData
     public int wins;
     public CellValue currentScore;
 }
+
 public enum ServerMatchOperation : byte
 {
     None,
@@ -58,7 +63,8 @@ public enum ClientMatchOperation : byte
     Departed,
     UpdateRoom,
     Started,
-    ReConnect    
+    ReConnect,
+    UpdateBalance
 }
 [Flags]
 public enum CellValue : ushort

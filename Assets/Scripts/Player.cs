@@ -21,12 +21,12 @@ public class Player : NetworkBehaviour
     public bool isRaider;
     [SyncVar(hook = nameof(OnDead))]
     public bool isDead;
-    
+
     public AudioClip deadClip;
     [SyncVar] public string NickName;
     private MiniGamePoint currentMiniGame;
     private VotingButton currentVoting;
-   
+
     private void Start()
     {
         if (isClient)
@@ -69,6 +69,7 @@ public class Player : NetworkBehaviour
         sprite.sprite = deadSprite;
         GetComponent<CircleCollider2D>().enabled = false;
     }
+
     private void OnType(PlayerType _, PlayerType value)
     {
         Animator anim = GetComponent<Animator>();
@@ -78,13 +79,19 @@ public class Player : NetworkBehaviour
     public override void OnStartAuthority()
     {
         base.OnStartAuthority();
-        currentMatch = FindObjectOfType<MatchController>();        
+        currentMatch = FindObjectOfType<MatchController>();
         currentMatch.localPlayer = this;
         Camera.main.GetComponent<CameraControll>().target = transform;
+        if (!LobbyManager.instance.isFanMode)
+        {
+            if (isRaider) UserData.balance -= 4;
+            else UserData.balance -= 1;
+        }
+
         CmdSetNickName(currentMatch.playerTypeName[(int)playerType]);
         DrawMiniMapMyGame();
         currentMatch.hud.voting.Invoke("SetNames", 2f);
-        
+
     }
 
     public void DrawMiniMapMyGame()
@@ -102,14 +109,15 @@ public class Player : NetworkBehaviour
     private void CmdSetNickName(string nick)
     {
         NickName = nick;
+        
     }
 
     public void OnRaider(bool _, bool value)
     {
         if (isLocalPlayer)
         {
-            currentMatch.hud.btnKill.SetActive(value);            
-            currentMatch.hud.displayMissionText.text = "Убей всех";
+            currentMatch.hud.btnKill.SetActive(value);
+            currentMatch.hud.displayMissionText.text = "???? ????";
             Killer k = GetComponent<Killer>();
             k.enabled = value;
             k.imgKD = currentMatch.hud.imgKd;
@@ -140,7 +148,7 @@ public class Player : NetworkBehaviour
 
         //            if (livePlayes < 3)
         //            {
-        //                currentMatch.StartCoroutine(currentMatch.ResultVotingWhite("Предатель совершил очередное убийство", MatchController.MatchState.End, true));
+        //                currentMatch.StartCoroutine(currentMatch.ResultVotingWhite("????????? ???????? ????????? ????????", MatchController.MatchState.End, true));
         //            }
         //            return;
         //        }
@@ -200,7 +208,7 @@ public class Player : NetworkBehaviour
             currentVoting.UseButton();
             moveControll.StopMove();
         }
-            
+
         currentMatch.hud.BtnAction(false);
     }
 

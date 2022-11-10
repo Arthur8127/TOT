@@ -10,9 +10,10 @@ public class Windows : MonoBehaviour
 {
     public CanvasGroup canvasGroup;
     public TextMeshProUGUI textContent;
+    public string titile;
     public UnityEvent OnShow, OnHide;
     public bool HideOnAwake;
-
+    
 
     private void Awake()
     {

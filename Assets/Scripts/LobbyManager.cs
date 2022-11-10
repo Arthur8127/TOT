@@ -27,11 +27,12 @@ public class LobbyManager : MonoBehaviour
     public Button btnCancelmatch;
     public GameObject matchControllerPrefab;
     public Toggle[] searchPlayers;
-    public Windows memuWindws, WaitingWindows, loginWindows, lobbyWindows, characterWindows;
+    public Windows memuWindws, WaitingWindows, loginWindows, lobbyWindows, characterWindows, dialog;
     public TextMeshProUGUI balanceText;
     public AudioSource sourceSounds, sourceMusic;
     public Slider sliderSound, sliderMusic;
     public AudioClip[] lobbyClips;
+    public bool isFanMode;
 
     private void Awake()
     {
@@ -83,14 +84,24 @@ public class LobbyManager : MonoBehaviour
     public void RequestCreateMatch()
     {
         if (!NetworkClient.active) return;
-
-        NetworkClient.connection.Send(new ServerMatchMessage { serverMatchOperation = ServerMatchOperation.Create });
+        ServerMatchMessage msg = new ServerMatchMessage();
+        msg.serverMatchOperation = ServerMatchOperation.Create;
+        msg.modeIsFree = isFanMode;
+        NetworkClient.connection.Send(msg);
     }
-    public void JoinOrCreateMatch()
+
+    public void JoinOrCreateMatch(bool mode)
     {
+        isFanMode = mode;
+        if (!mode && UserData.balance < 8)
+        {
+            dialog.Show();
+            return;
+        }
+
         foreach (var item in openMatches)
         {
-            if (item.Value.players < item.Value.maxPlayers)
+            if (item.Value.players < item.Value.maxPlayers && isFanMode == item.Value.isFree)
             {
                 SelectMatch(item.Value.matchId);
                 RequestJoinMatch();
@@ -108,7 +119,12 @@ public class LobbyManager : MonoBehaviour
     {
         if (!NetworkClient.active || selectedMatch == Guid.Empty) return;
 
-        NetworkClient.connection.Send(new ServerMatchMessage { serverMatchOperation = ServerMatchOperation.Join, matchId = selectedMatch });
+        ServerMatchMessage msg = new ServerMatchMessage();
+        msg.serverMatchOperation = ServerMatchOperation.Join;
+        msg.info.balance = UserData.balance;
+        msg.info.email = UserData.email;
+        msg.matchId = selectedMatch;
+        NetworkClient.connection.Send(msg);
     }
     public void RequestLeaveMatch()
     {
@@ -279,7 +295,7 @@ public class LobbyManager : MonoBehaviour
 
             case ServerMatchOperation.Create:
                 {
-                    OnServerCreateMatch(conn);
+                    OnServerCreateMatch(conn, msg.modeIsFree);
                     break;
                 }
             case ServerMatchOperation.Cancel:
@@ -294,7 +310,7 @@ public class LobbyManager : MonoBehaviour
                 }
             case ServerMatchOperation.Join:
                 {
-                    OnServerJoinMatch(conn, msg.matchId);
+                    OnServerJoinMatch(conn, msg);
                     break;
                 }
             case ServerMatchOperation.Leave:
@@ -307,6 +323,7 @@ public class LobbyManager : MonoBehaviour
                     OnServerPlayerReady(conn, msg.matchId);
                     break;
                 }
+
         }
     }
     void OnServerPlayerReady(NetworkConnection conn, Guid matchId)
@@ -355,7 +372,7 @@ public class LobbyManager : MonoBehaviour
 
         conn.Send(new ClientMatchMessage { clientMatchOperation = ClientMatchOperation.Departed });
     }
-    void OnServerCreateMatch(NetworkConnection conn)
+    void OnServerCreateMatch(NetworkConnection conn, bool mode)
     {
         if (!NetworkServer.active || playerMatches.ContainsKey(conn)) return;
 
@@ -363,7 +380,7 @@ public class LobbyManager : MonoBehaviour
         matchConnections.Add(newMatchId, new HashSet<NetworkConnection>());
         matchConnections[newMatchId].Add(conn);
         playerMatches.Add(conn, newMatchId);
-        openMatches.Add(newMatchId, new MatchInfo { matchId = newMatchId, maxPlayers = NetManager.instance.game.PlayerNedeetForMatch, players = 1 });
+        openMatches.Add(newMatchId, new MatchInfo { matchId = newMatchId, maxPlayers = NetManager.instance.game.PlayerNedeetForMatch, players = 1, isFree = mode });
 
         PlayerInfo playerInfo = playerInfos[conn];
         //playerInfo.ready = true;
@@ -415,7 +432,7 @@ public class LobbyManager : MonoBehaviour
             GameObject matchControllerObject = Instantiate(matchControllerPrefab);
             matchControllerObject.GetComponent<NetworkMatch>().matchId = matchId;
             MatchController currentMatch = matchControllerObject.GetComponent<MatchController>();
-
+            currentMatch.isFreeGame = openMatches[matchId].isFree;
             NetworkServer.Spawn(matchControllerObject);
 
             MatchController matchController = matchControllerObject.GetComponent<MatchController>();
@@ -446,8 +463,30 @@ public class LobbyManager : MonoBehaviour
             matchController.players[playerId].isRaider = true;
             Killer k = matchController.players[playerId].GetComponent<Killer>();
             k.enabled = true;
-            
+
+
             //========================
+            if (!openMatches[matchId].isFree)
+            {
+                PlayerInfo[] infos = matchConnections[matchId].Select(playerConn => playerInfos[playerConn]).ToArray();
+                float take = -2f;
+                for (int i = 0; i < infos.Length; i++)
+                {
+                    currentMatch.raiderID = playerId;
+                    currentMatch.emails.Add(infos[i].email);
+                    WWWForm form = new WWWForm();
+                    form.AddField("action", "balance");
+                    form.AddField("email", infos[i].email);
+                    if (i == playerId) take = -8f;
+                    form.AddField("take", take.ToString());
+                    WWW www = new WWW(NetManager.instance.game.urlDataBase, form);
+
+                }
+                foreach (NetworkConnection playerConn in matchConnections[matchId])
+                {
+                    playerConn.Send(new ClientMatchMessage { clientMatchOperation = ClientMatchOperation.UpdateBalance });
+                }
+            }
 
             //matchController.players[playerId].timerAttack = NetManager.instance.game.timerAttack;
             memuWindws.Hide();
@@ -459,26 +498,27 @@ public class LobbyManager : MonoBehaviour
 
         }
     }
-    void OnServerJoinMatch(NetworkConnection conn, Guid matchId)
+    void OnServerJoinMatch(NetworkConnection conn, ServerMatchMessage msg)
     {
-        if (!NetworkServer.active || !matchConnections.ContainsKey(matchId) || !openMatches.ContainsKey(matchId)) return;
+        if (!NetworkServer.active || !matchConnections.ContainsKey(msg.matchId) || !openMatches.ContainsKey(msg.matchId)) return;
 
-        MatchInfo matchInfo = openMatches[matchId];
+        MatchInfo matchInfo = openMatches[msg.matchId];
         matchInfo.players++;
-        openMatches[matchId] = matchInfo;
-        matchConnections[matchId].Add(conn);
+        openMatches[msg.matchId] = matchInfo;
+        matchConnections[msg.matchId].Add(conn);
 
         PlayerInfo playerInfo = playerInfos[conn];
         // playerInfo.ready = true;
-        playerInfo.matchId = matchId;
+        playerInfo.matchId = msg.matchId;
         playerInfos[conn] = playerInfo;
-
-        PlayerInfo[] infos = matchConnections[matchId].Select(playerConn => playerInfos[playerConn]).ToArray();
+        playerInfo.balance = msg.info.balance;
+        playerInfo.email = msg.info.email;
+        PlayerInfo[] infos = matchConnections[msg.matchId].Select(playerConn => playerInfos[playerConn]).ToArray();
         SendMatchList();
 
-        conn.Send(new ClientMatchMessage { clientMatchOperation = ClientMatchOperation.Joined, matchId = matchId, playerInfos = infos });
+        conn.Send(new ClientMatchMessage { clientMatchOperation = ClientMatchOperation.Joined, matchId = msg.matchId, playerInfos = infos });
 
-        foreach (NetworkConnection playerConn in matchConnections[matchId])
+        foreach (NetworkConnection playerConn in matchConnections[msg.matchId])
         {
             playerConn.Send(new ClientMatchMessage { clientMatchOperation = ClientMatchOperation.UpdateRoom, playerInfos = infos });
         }
@@ -545,7 +585,6 @@ public class LobbyManager : MonoBehaviour
                 }
             case ClientMatchOperation.Started:
                 {
-
                     lobbyWindows.Hide();
                     WaitingWindows.Hide();
                     break;
@@ -554,9 +593,12 @@ public class LobbyManager : MonoBehaviour
                 {
 
                     localJoinedMatch = Guid.Empty;
-                    JoinOrCreateMatch();
+                    JoinOrCreateMatch(isFanMode);
                     break;
                 }
+            case ClientMatchOperation.UpdateBalance:
+                StartCoroutine(UpdateBalanceClient());
+                break;
         }
     }
     void ShowLobbyView()
@@ -566,9 +608,17 @@ public class LobbyManager : MonoBehaviour
         WaitingWindows.Hide();
     }
 
-    public void RefreshBalance()
+
+
+    public IEnumerator UpdateBalanceClient()
     {
-        balanceText.text = UserData.balance.ToString("F2");
+        WWWForm form = new WWWForm();
+        form.AddField("action", "getBalance");
+        form.AddField("email", UserData.email);
+        WWW www = new WWW(NetManager.instance.game.urlDataBase, form);
+        yield return www;
+        balanceText.text = www.text;
+        UserData.balance = Convert.ToSingle(www.text);
     }
 
     void RefreshMatchList()
@@ -586,7 +636,7 @@ public class LobbyManager : MonoBehaviour
         {
             searchPlayers[i].isOn = i < playerCount;
         }
-        WaitingWindows.textContent.text = "Найдено игроков: " + playerCount + "/" + NetManager.instance.game.PlayerNedeetForMatch;
+        WaitingWindows.textContent.text = "РќР°Р№РґРµРЅРЅРѕ РёРіСЂРѕРєРѕРІ: " + playerCount + "/" + NetManager.instance.game.PlayerNedeetForMatch;
         if (playerCount == NetManager.instance.game.PlayerNedeetForMatch)
         {
             if (isOwner)
@@ -621,19 +671,19 @@ public class LobbyManager : MonoBehaviour
 
     public void PlayeSound(AudioClip clip)
     {
-        if(clip!= null)
-        sourceSounds.PlayOneShot(clip);
+        if (clip != null)
+            sourceSounds.PlayOneShot(clip);
     }
 
     public void PlayMusic(AudioClip clip)
     {
         sourceMusic.Stop();
-        if(clip != null)
+        if (clip != null)
         {
             sourceMusic.clip = clip;
             sourceMusic.Play();
         }
-        
+
     }
 
     #endregion

@@ -73,12 +73,12 @@ public class LoginPanel : MonoBehaviour
             currentPanel = CurrentPanel.reg;            
             signInWindows.Hide();
             regWindows.Show();
-            currentPanelTitile.text = "Регистрация";
+            currentPanelTitile.text = regWindows.titile;
         }
 
         else
         {
-            currentPanelTitile.text = "Авторизация";
+            currentPanelTitile.text = signInWindows.titile;
             currentPanel = CurrentPanel.signIn;
             regWindows.Hide();
             signInWindows.Show();
@@ -89,17 +89,17 @@ public class LoginPanel : MonoBehaviour
 
     private string CheckError()
     {
-        if (currentPanel == CurrentPanel.reg)    // если регистрируемся
+        if (currentPanel == CurrentPanel.reg)    
         {
-            if (String.IsNullOrWhiteSpace(regEmail.text) || String.IsNullOrWhiteSpace(regPass1.text) || String.IsNullOrWhiteSpace(regPass2.text)) return "Все поля должны быть заполнены";
-            if (regPass1.text != regPass2.text) return "пароли не совпадают";
-            if(!regEmail.text.Contains("@")) return "Email не корректный";
+            if (String.IsNullOrWhiteSpace(regEmail.text) || String.IsNullOrWhiteSpace(regPass1.text) || String.IsNullOrWhiteSpace(regPass2.text)) return "Р’СЃРµ РїРѕР»СЏ РґРѕР»Р¶РЅС‹ Р±С‹С‚СЊ Р·Р°РїРѕР»РЅРµРЅС‹.";
+            if (regPass1.text != regPass2.text) return "РџР°СЂРѕР»Рё РЅРµ СЃРѕРІРїР°РґР°СЋС‚.";
+            if(!regEmail.text.Contains("@")) return "Email РІРІРµРґРµРЅ РЅРµ РєРѕСЂСЂРµРєС‚РЅРѕ";
             return null;
         }
-        else  // если входим
+        else  
         {
-            if (String.IsNullOrWhiteSpace(signInEmail.text) || String.IsNullOrWhiteSpace(signInPass.text)) return "Все поля должны быть заполнены"; // заполнены все поля?            
-            if (!signInEmail.text.Contains("@")) return "Email не корректный";
+            if (String.IsNullOrWhiteSpace(signInEmail.text) || String.IsNullOrWhiteSpace(signInPass.text)) return "Р’СЃРµ РїРѕР»СЏ РґРѕР»Р¶РЅС‹ Р±С‹С‚СЊ Р·Р°РїРѕР»РЅРµРЅС‹.";          
+            if (!signInEmail.text.Contains("@")) return "Email РІРІРµРґРµРЅ РЅРµ РєРѕСЂСЂРµРєС‚РЅРѕ.";
             return null;            
         }
     }
@@ -111,8 +111,8 @@ public class LoginPanel : MonoBehaviour
 
     public void TrySignIn()
     {
-        string err = CheckError();
-        if(err == null)
+        
+        if(CheckError() == null)
         {
             if (currentPanel == CurrentPanel.reg)
                 StartCoroutine(RegCarutine());
@@ -121,7 +121,7 @@ public class LoginPanel : MonoBehaviour
         }
         else
         {
-            GetText().text = err;
+            GetText().text = CheckError();
         }
     }
 
@@ -142,6 +142,7 @@ public class LoginPanel : MonoBehaviour
         }
         else regErr.text = www.text;
         Debug.Log(www.text);
+        www.Dispose();
     }
     private IEnumerator SiginInCarutine()
     {
@@ -151,7 +152,7 @@ public class LoginPanel : MonoBehaviour
         form.AddField("password", signInPass.text);
         WWW www = new WWW(url, form);
         yield return www;
-
+        Debug.Log(www.text);
         Data data = JsonUtility.FromJson<Data>(www.text);
         if(data.err != "ok") signInErr.text = data.err;
         else
@@ -161,7 +162,7 @@ public class LoginPanel : MonoBehaviour
             UserData.balance = data.balance;
             SceneManager.LoadScene(1);
         }
-        
+        www.Dispose();
     }
 }
 

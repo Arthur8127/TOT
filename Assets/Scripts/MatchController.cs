@@ -28,6 +28,13 @@ public class MatchController : NetworkBehaviour
     public Chat chat;
     public Slider sliderSound, sliderMusic;
     public AudioSource[] mapSources;
+    public List<string> emails = new List<string>();
+    public int raiderID;
+    public bool isFreeGame;
+
+
+
+
     private void Start()
     {
         if (!isServer)
@@ -39,13 +46,10 @@ public class MatchController : NetworkBehaviour
         {
             StartCoroutine(WaitingMatch());
         }
-
     }
-
 
     private IEnumerator WaitingMatch()
     {
-
         matchState = MatchState.Starting;
         currentTimer = NetManager.instance.game.TimeStartingMatch;
         while (currentTimer >= 0)
@@ -54,9 +58,7 @@ public class MatchController : NetworkBehaviour
             currentTimer--;
         }
         matchState = MatchState.GamePlay;
-
     }
-
 
     public void OnChengeState(MatchState _, MatchState value)
     {
@@ -65,7 +67,6 @@ public class MatchController : NetworkBehaviour
             hud.HideAll();
         }
 
-
         localPlayer.moveControll.SetControlActive = false;
         switch (value)
         {
@@ -73,6 +74,7 @@ public class MatchController : NetworkBehaviour
 
                 hud.waitingStartMatch.Show();
                 break;
+
             case MatchState.GamePlay:
                 if (localPlayer.isDead == false)
                 {
@@ -86,8 +88,8 @@ public class MatchController : NetworkBehaviour
                         players[i].moveControll.SetControlActive = true;
                     }
                 }
-
                 break;
+
             case MatchState.Voting:
                 if (localPlayer)
                 {
@@ -100,16 +102,17 @@ public class MatchController : NetworkBehaviour
                 }
                 hud.votingWindows.Show();
                 break;
+
             case MatchState.End:
+
                 break;
         }
-
     }
 
     public void OnTimer(int _, int value)
     {
         if (value < 0) return;
-        hud.waitingStartMatch.textContent.text = "ИГРА НАЧНЕТСЯ ЧЕРЕЗ " + value + " СЕК.";
+        hud.waitingStartMatch.textContent.text = "РРіСЂР° РЅР°С‡РЅРµС‚СЃСЏ С‡РµСЂРµР· " + value + " СЃРµРє.";
         if (value == 0) PlaySound(startMatchClip);
         else PlaySound(timerClip);
     }
@@ -124,7 +127,8 @@ public class MatchController : NetworkBehaviour
         int playerIndex = players.IndexOf(playerDisconnect);
         if (playerDisconnect.isRaider)
         {
-            StartCoroutine(ResultVotingWhite("Предатель добровольно сдался.", MatchState.End, false));
+            StartCoroutine(ResultVotingWhite("РџСЂРµРґР°С‚РµР»СЊ РїРѕРєРёРЅСѓР» РёРіСЂСѓ. ", MatchState.End, false));
+            Award(false);
             return;
         }
         else
@@ -132,7 +136,8 @@ public class MatchController : NetworkBehaviour
             int playeCount = players.Select(x => x).Where(x => x.isDead == false && x.connectionToClient != conn).Count();
             if (playeCount < 3)
             {
-                StartCoroutine(ResultVotingWhite("Один из мирных покинул игру.", MatchState.End, true));
+                StartCoroutine(ResultVotingWhite("РњРёСЂРЅС‹Р№ РїРѕРєРёРЅСѓР» РёРіСЂСѓ.", MatchState.End, true));
+                Award(true);
                 return;
             }
 
@@ -141,31 +146,7 @@ public class MatchController : NetworkBehaviour
         players.Remove(playerDisconnect);
         RpcRemovePlayer(playerIndex);
 
-        #region comments
-        //for (int i = 0; i < players.Count; i++)
-        //{
-        //    if (players[i].connectionToClient == conn)
-        //    {
-        //        if (players[i].isRaider == false)
-        //        {
-        //            if (players.Where(x => x.isDead == false).Count() <= 3)
-        //            {
-        //                StartCoroutine(ResultVotingWhite("Один из мирных покинул игры в команде мало мирных", MatchState.End, true));
-        //                return;
-        //            }
-        //            MiniGameCheneType((int)players[i].playerType);
-        //            players.RemoveAt(i);
-        //            RpcRemovePlayer(i);
-        //            return;
-        //        }
-        //        else
-        //        {
-
-        //            StartCoroutine(ResultVotingWhite("Предатель вышел из игры", MatchState.End, false));
-        //        }
-        //    }
-        //}
-        #endregion
+        
     }
     [ClientRpc]
     public void RpcRemovePlayer(int index)
@@ -230,13 +211,14 @@ public class MatchController : NetworkBehaviour
             AnalisVoiting();
         }
     }
+
     public void AnalisVoiting()
     {
         string msg = "";
         votingList.RemoveAll(x => x == -1);
-        if (votingList.Count < 1) // после удаление скпиов если нет хотябы 2 голоса то считаем как скип
+        if (votingList.Count < 1)
         {
-            msg = "Сегодня никто не умер.";
+            msg = "Р“РѕР»РѕСЃРѕРІР°РЅРёРµ РЅРµ СЃРѕСЃС‚РѕСЏР»РѕСЃСЊ.";
             StartCoroutine(ResultVotingWhite(msg, MatchState.GamePlay, false));
             return;
         }
@@ -246,7 +228,7 @@ public class MatchController : NetworkBehaviour
 
         if (d[m] <= 1)
         {
-            msg = "Сегодня никто не умер.";
+            msg = "Р“РѕР»РѕСЃРѕРІР°РЅРёРµ РЅРµ СЃРѕСЃС‚РѕСЏР»РѕСЃСЊ.";
             StartCoroutine(ResultVotingWhite(msg, MatchState.GamePlay, false));
             return;
         }
@@ -256,86 +238,69 @@ public class MatchController : NetworkBehaviour
             {
                 if (item.Value == d[m] && item.Key != m)
                 {
-                    msg = "Результат голосования оказался спорным.";
+                    msg = "Р РµР·Р°Р»СЊС‚Р°С‚ РіРѕР»РѕСЃРѕРІР°РЅРёСЏ РѕРєР°Р·Р°Р»СЃСЏ СЃРїРѕСЂРЅС‹Рј.";
                     StartCoroutine(ResultVotingWhite(msg, MatchState.GamePlay, false));
                     return;
                 }
             }
-            msg = "Решили избавиться от " + players[m].NickName;
+            msg = "????????????? ??????" + players[m].NickName;
             players[m].isDead = true;
             CheckWinner(players[m]);
         }
 
     }
-    #region comment
-    //MatchState state = MatchState.GamePlay;
-    //string msg = "";
-    //bool winner = false;
-    //if (condidat > -1)
-    //{
-    //    if (condidat != secondCondidat)
-    //    {
-
-    //        players[condidat].isDead = true;
-    //        if (players[condidat].isRaider)
-    //        {
-    //            state = MatchState.End;
-    //            msg = "Проголосовали протов предателя";
-    //            winner = false;
-    //        }
-    //        else
-    //        {
-    //            if(players.Select(x=>x.isDead == false).Count() < 3)
-    //            {
-    //                state = MatchState.End;
-    //                msg = "Проголосовали протв мирного";
-    //                winner = true;
-    //            }
-    //            else
-    //            {
-    //                state = MatchState.GamePlay;
-    //                msg = "Проголосовали против мирного";
-
-    //            }
-    //        }
-
-    //    }
-    //    else
-    //    {
-    //        state = MatchState.GamePlay;
-    //        msg = "Спорное голосование";
-    //    }
-    //}
-    //else
-    //{
-    //    state = MatchState.GamePlay;
-    //    msg = "Все скипнули";
-    //}
-
-    //StartCoroutine(ResultVotingWhite(msg, state, winner));
-
-    #endregion
+    
 
 
     private void CheckWinner(Player player)
     {
         if (player.isRaider)
         {
-            StartCoroutine(ResultVotingWhite("Вы нашли предателя: " + player.NickName + ".", MatchState.End, false));
+            StartCoroutine(ResultVotingWhite("РџСЂРµРґР°РґРµР»СЊ РїРѕР±РµРґРёР»: " + player.NickName + " ?????????.", MatchState.End, false));
+            Award(false);
         }
         else
         {
-            // выкинули мирного
+
             if (GetLivePlayers() > 2)
             {
-                // если более 2х живых можно продложать
-                StartCoroutine(ResultVotingWhite("Избавились от мирного: " + player.NickName + ".", MatchState.GamePlay, false));
+                StartCoroutine(ResultVotingWhite("?????????? ?? ??????? ???????: " + player.NickName + ".", MatchState.GamePlay, false));
             }
             else
             {
-                // предатель победил надо заканчивать
-                StartCoroutine(ResultVotingWhite("Избавились от мирного: " + player.NickName + ".", MatchState.End, true));
+                StartCoroutine(ResultVotingWhite("?????????? ?? ???????: " + player.NickName + ".", MatchState.End, true));
+                Award(true);
             }
+        }
+    }
+    public void GameComplite()
+    {
+        string message = "РњРёСЂРЅС‹Рµ РїРѕР±РµРґРёР»Рё РІС‹РїРѕР»РЅРёРІ " + NetManager.instance.game.nedeedMiniGameCompliteToWin + " Р·Р°РґР°РЅРёР№.";
+        StartCoroutine(ResultVotingWhite(message, MatchState.End, true));
+        Award(false);
+    }
+    private void Award(bool isRaider)
+    {
+        if (isFreeGame) return;
+        float ibt = 16f;
+        if (isRaider)
+        {
+            string rEmail = emails[raiderID];
+            emails.Clear();
+            emails.Add(rEmail);
+        }
+        else
+        {
+            emails.RemoveAt(raiderID);
+        }
+        ibt = ibt / emails.Count;
+        for (int i = 0; i < emails.Count; i++)
+        {
+            WWWForm form = new WWWForm();
+            form.AddField("action", "balance");
+            form.AddField("email", emails[i]);
+            form.AddField("ibt", ibt.ToString());
+            WWW www = new WWW(NetManager.instance.game.urlDataBase, form);
         }
     }
 
@@ -348,7 +313,11 @@ public class MatchController : NetworkBehaviour
     {
         yield return new WaitForSeconds(0.5f);
         bool isEnd = false;
-        if (state == MatchState.End) isEnd = true;
+        if (state == MatchState.End)
+        {
+            isEnd = true;
+
+        }
         RpcVotingResult(value, isEnd, winner);
         float waitingTimer = 3f;
         if (state == MatchState.End) waitingTimer = 5f;
@@ -412,6 +381,7 @@ public class MatchController : NetworkBehaviour
         LobbyManager.instance.memuWindws.Show();
         LobbyManager.instance.lobbyWindows.Show();
         LobbyManager.instance.WaitingWindows.Hide();
+        LobbyManager.instance.StartCoroutine(LobbyManager.instance.UpdateBalanceClient());
     }
 
     [ClientRpc]
@@ -479,9 +449,47 @@ public class MatchController : NetworkBehaviour
                 players[i].isDead = true;
                 if (GetLivePlayers() < 3)
                 {
-                    StartCoroutine(ResultVotingWhite("Предатель совершил очередное убийство", MatchController.MatchState.End, true));
+                    StartCoroutine(ResultVotingWhite("????????? ???????? ????????? ????????", MatchController.MatchState.End, true));
                 }
             }
         }
+    }
+
+    public int GetIndexMiniGame(MiniGamePoint miniGame)
+    {
+        int index = 0;
+        for (int i = 0; i < miniGamePoints.Count; i++)
+        {
+            if (miniGamePoints[i] == miniGame)
+            {
+                index = i;
+                break;
+            }
+        }
+        return index;
+    }
+
+    [Command(requiresAuthority = false)]
+    public void CmdCompliteMiniGame(int index)
+    {
+        miniGamePoints[index].isComplite = true;
+        int compliteCount = 0;
+        for (int i = 0; i < miniGamePoints.Count; i++)
+        {
+            if (miniGamePoints[i].isComplite)
+                compliteCount++;
+        }
+        RpcMiniGameComplite(index);
+        if (compliteCount >= NetManager.instance.game.nedeedMiniGameCompliteToWin)
+        {
+            GameComplite();
+        }
+    }
+    [ClientRpc]
+    public void RpcMiniGameComplite(int index)
+    {
+        miniGamePoints[index].isComplite = true;
+        miniGamePoints[index].miniMapIcon.enabled = false;
+
     }
 }
